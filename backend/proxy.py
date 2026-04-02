@@ -22,7 +22,7 @@ def forward_to_gemini(payload: Dict[str, Any], api_key: str = None) -> Dict[str,
 
     # 2. Configure Gemini
     genai.configure(api_key=api_key)
-    model_name = payload.get("model", "gemini-1.5-flash")
+    model_name = payload.get("model", "gemini-flash-latest")
     
     # Ensure model starts with "models/" prefix
     if not model_name.startswith("models/"):
