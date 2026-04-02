@@ -110,7 +110,7 @@ if run_btn:
                 with col_output:
                     st.subheader("🛡️ Safe Output")
                     st.info("**Scrubbed Text (Sent to LLM):**")
-                    st.code(scrubbed_text)
+                    st.markdown(f"```text\n{scrubbed_text}\n```")
                     
                     st.success("**AI Response:**")
                     st.write(response['choices'][0]['message']['content'])
