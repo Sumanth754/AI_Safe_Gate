@@ -1,18 +1,16 @@
-import httpx
 import os
 import json
+import google.generativeai as genai
 from typing import Dict, Any
 
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-
-async def forward_to_openai(payload: Dict[str, Any], api_key: str = None) -> Dict[str, Any]:
-    # Mocking for demo if no API key is provided
+def forward_to_gemini(payload: Dict[str, Any], api_key: str = None) -> Dict[str, Any]:
+    # 1. Handle Mock Mode if no API key
     if not api_key:
         return {
             "choices": [{
                 "message": {
                     "role": "assistant",
-                    "content": "This is a mock response from SafeGate proxy. I received your request and it has been scrubbed of PII."
+                    "content": "This is a MOCK response from SafeGate (Google Gemini Mode). I received your request and it has been scrubbed of PII."
                 }
             }],
             "usage": {
@@ -22,21 +20,45 @@ async def forward_to_openai(payload: Dict[str, Any], api_key: str = None) -> Dic
             }
         }
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+    # 2. Configure Gemini
+    genai.configure(api_key=api_key)
+    model_name = payload.get("model", "gemini-1.5-flash")
+    model = genai.GenerativeModel(model_name)
+    
+    # 3. Get the scrubbed message
+    user_message = payload['messages'][-1]['content']
+    
+    # 4. Generate Response
+    response = model.generate_content(user_message)
+    
+    # 5. Format to match OpenAI style (so frontend/app.py doesn't break)
+    prompt_tokens = len(user_message) // 4
+    completion_tokens = len(response.text) // 4
+    
+    return {
+        "choices": [{
+            "message": {
+                "role": "assistant",
+                "content": response.text
+            }
+        }],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens
+        }
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(OPENAI_API_URL, json=payload, headers=headers, timeout=30.0)
-        return response.json()
+async def forward_to_openai(payload: Dict[str, Any], api_key: str = None) -> Dict[str, Any]:
+    # We will redirect this to Gemini for your convenience
+    return forward_to_gemini(payload, api_key)
 
-def calculate_cost(tokens: int, model: str = "gpt-4o"):
-    # Rough estimate cost per 1k tokens
+def calculate_cost(tokens: int, model: str = "gemini-1.5-flash"):
+    # Gemini 1.5 Flash is currently free (within limits) or very cheap
     rates = {
-        "gpt-4o": 0.005 / 1000,
-        "gpt-3.5-turbo": 0.001 / 1000,
-        "default": 0.002 / 1000
+        "gemini-1.5-flash": 0.0, # Free tier
+        "gemini-1.5-pro": 0.001 / 1000,
+        "default": 0.0005 / 1000
     }
     rate = rates.get(model, rates["default"])
     return tokens * rate
