@@ -62,7 +62,7 @@ with col_input:
                              placeholder="Hi, I'm John Doe. My SSN is 123-45-6789 and my email is john@example.com", 
                              height=200)
     
-    model_choice = st.selectbox("Select Model:", ["gemini-1.5-flash", "gemini-1.5-pro"])
+    model_choice = st.selectbox("Select Model:", ["gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash-lite"])
     
     run_btn = st.button("Run Safe Request 🚀", type="primary", use_container_width=True)
 

@@ -63,10 +63,11 @@ async def forward_to_openai(payload: Dict[str, Any], api_key: str = None) -> Dic
     # We will redirect this to Gemini for your convenience
     return forward_to_gemini(payload, api_key)
 
-def calculate_cost(tokens: int, model: str = "gemini-1.5-flash"):
-    # Gemini 1.5 Flash is currently free (within limits) or very cheap
+def calculate_cost(tokens: int, model: str = "gemini-2.0-flash"):
+    # Gemini 2.0 Flash is currently in preview/free tier
     rates = {
-        "gemini-1.5-flash": 0.0, # Free tier
+        "gemini-2.0-flash": 0.0,
+        "gemini-1.5-flash": 0.0,
         "gemini-1.5-pro": 0.001 / 1000,
         "default": 0.0005 / 1000
     }
