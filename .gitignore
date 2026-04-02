@@ -1,0 +1,30 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+include/
+
+# Environment Variables
+.env
+.env.example
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Streamlit
+.streamlit/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project specific
+test_project.py
+find_working_model.py
+diagnose_models.py

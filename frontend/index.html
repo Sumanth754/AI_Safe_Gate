@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeGate - Governance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 font-sans">
+    <nav class="bg-indigo-700 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-shield-halved mr-2"></i> SafeGate Proxy
+            </h1>
+            <div class="space-x-6">
+                <span class="bg-indigo-800 px-3 py-1 rounded text-sm">Enterprise Governance Active</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-10 px-4">
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
+                <p class="text-gray-500 text-sm font-medium uppercase">PII Leaks Prevented</p>
+                <h2 id="stat-pii" class="text-3xl font-bold text-gray-800 mt-1">0</h2>
+                <p class="text-xs text-red-600 mt-2"><i class="fas fa-arrow-down mr-1"></i> Critical Risk Averted</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500">
+                <p class="text-gray-500 text-sm font-medium uppercase">Total Requests</p>
+                <h2 id="stat-requests" class="text-3xl font-bold text-gray-800 mt-1">0</h2>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                <p class="text-gray-500 text-sm font-medium uppercase">Tokens Scrubbed</p>
+                <h2 id="stat-tokens" class="text-3xl font-bold text-gray-800 mt-1">0</h2>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-amber-500">
+                <p class="text-gray-500 text-sm font-medium uppercase">Total Cost (USD)</p>
+                <h2 id="stat-cost" class="text-3xl font-bold text-gray-800 mt-1">$0.00</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Test Interface -->
+            <div class="bg-white p-8 rounded-2xl shadow-md">
+                <h3 class="text-xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-paper-plane text-indigo-600 mr-2"></i> Test Proxy Scrubbing
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Send a message with PII (Email, Phone, Name)</label>
+                        <textarea id="test-input" rows="4" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Hi, I am John Doe. My email is john@company.com and I live in San Francisco."></textarea>
+                    </div>
+                    <button onclick="testProxy()" id="send-btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                        Run Safe Request
+                    </button>
+                    
+                    <div id="result-box" class="hidden mt-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
+                        <p class="text-xs font-bold text-indigo-700 uppercase mb-2">SafeGate Processed Preview:</p>
+                        <p id="scrubbed-output" class="text-gray-700 italic"></p>
+                        <hr class="my-3">
+                        <p class="text-xs font-bold text-emerald-700 uppercase mb-2">LLM Response:</p>
+                        <p id="llm-output" class="text-gray-900"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Logs -->
+            <div class="bg-white p-8 rounded-2xl shadow-md">
+                <h3 class="text-xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-list-check text-indigo-600 mr-2"></i> Real-time Audit Trail
+                </h3>
+                <div class="overflow-hidden">
+                    <ul id="log-list" class="space-y-4">
+                        <li class="text-center text-gray-400 py-10">No logs yet. Start testing!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = "http://localhost:8000";
+
+        async function refreshStats() {
+            try {
+                const statsRes = await fetch(`${API_BASE}/stats`);
+                const stats = await statsRes.json();
+                document.getElementById('stat-pii').innerText = stats.pii_leaks_prevented;
+                document.getElementById('stat-requests').innerText = stats.total_requests;
+                document.getElementById('stat-tokens').innerText = stats.total_tokens_used;
+                document.getElementById('stat-cost').innerText = `$${stats.total_cost_usd}`;
+
+                const logsRes = await fetch(`${API_BASE}/logs`);
+                const logs = await logsRes.json();
+                const logList = document.getElementById('log-list');
+                logList.innerHTML = logs.map(log => `
+                    <li class="p-3 border-b flex justify-between items-center hover:bg-slate-50 transition">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">${log.scrubbed_text.substring(0, 60)}...</p>
+                            <p class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleTimeString()}</p>
+                        </div>
+                        <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">
+                            ${log.pii_count} LEAKS
+                        </span>
+                    </li>
+                `).join('');
+            } catch (err) {
+                console.error("Dashboard refresh failed:", err);
+            }
+        }
+
+        async function testProxy() {
+            const input = document.getElementById('test-input').value;
+            const btn = document.getElementById('send-btn');
+            const resultBox = document.getElementById('result-box');
+            
+            if (!input) return;
+
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            try {
+                const res = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: "test_user_01",
+                        messages: [{ role: "user", content: input }],
+                        model: "gpt-4o"
+                    })
+                });
+
+                const data = await res.json();
+                
+                resultBox.classList.remove('hidden');
+                document.getElementById('scrubbed-output').innerText = data.scrubbed_preview || input;
+                document.getElementById('llm-output').innerText = data.response.choices[0].message.content;
+                
+                refreshStats();
+            } catch (err) {
+                alert("Backend not running. Start the server first!");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Run Safe Request";
+            }
+        }
+
+        // Auto refresh every 5 seconds
+        setInterval(refreshStats, 5000);
+        refreshStats();
+    </script>
+</body>
+</html>
